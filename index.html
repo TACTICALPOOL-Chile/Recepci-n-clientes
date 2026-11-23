@@ -186,7 +186,6 @@
       return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Lista inicial vacia (sin clientes de demostracion)
     const DEFAULT_ORDERS = [];
     const STORAGE_KEY = 'tacticalpool_orders_v3';
 
@@ -495,7 +494,6 @@
       showToast('Foto eliminada');
     }
 
-    // Eliminar cliente / visita
     function askDeleteOrder(id, ev) {
       if (ev) ev.stopPropagation();
       const target = orders.find(x => x.id === id);
@@ -544,7 +542,6 @@
       showToast('Cliente "' + (removed ? removed.nombre : '') + '" eliminado');
     }
 
-    // Modal nueva visita
     function openNewModal() {
       document.getElementById('new-nombre').value = '';
       document.getElementById('new-direccion').value = '';
@@ -591,7 +588,6 @@
       showToast('Visita ' + newId + ' agendada');
     }
 
-    // Firma tactil cliente
     function initSignatureCanvas() {
       const canvas = document.getElementById('sig-canvas');
       if (!canvas) return;
@@ -646,7 +642,6 @@
       showToast('¡Recepción Conforme registrada!');
     }
 
-    // --- RENDER PRINCIPAL ---
     function render() {
       const o = getActiveOrder();
       const container = document.getElementById('app-container');
@@ -691,13 +686,13 @@
           const sel = item.id === o.id;
           const d = CHECKLIST_ITEMS.filter(c => item.checklist[c.id]).length;
           listHtml +=
-            '<div onclick="selectOrder('' + escHtml(item.id) + '')" class="cursor-pointer w-full text-left p-3.5 rounded-xl border transition ' +
+            '<div onclick="selectOrder(\'' + escHtml(item.id) + '\')" class="cursor-pointer w-full text-left p-3.5 rounded-xl border transition ' +
             (sel ? 'bg-slate-800/90 border-cyan-500 shadow-lg' : 'bg-slate-950/60 border-slate-800 hover:border-slate-700') + '">' +
             '<div class="flex items-center justify-between gap-2 mb-1">' +
             '<span class="text-xs font-mono text-cyan-400 font-bold">' + escHtml(item.id) + '</span>' +
             '<div class="flex items-center gap-1.5">' +
             '<span class="text-[11px] px-2 py-0.5 rounded-full border font-semibold ' + statusClass(item.estado) + '">' + escHtml(item.estado) + '</span>' +
-            '<button type="button" title="Eliminar visita" onclick="askDeleteOrder('' + escHtml(item.id) + '', event)" class="px-1.5 py-0.5 rounded-md bg-rose-950/70 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-800/60 text-[11px] font-bold transition">🗑️</button>' +
+            '<button type="button" title="Eliminar visita" onclick="askDeleteOrder(\'' + escHtml(item.id) + '\', event)" class="px-1.5 py-0.5 rounded-md bg-rose-950/70 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-800/60 text-[11px] font-bold transition">🗑️</button>' +
             '</div></div>' +
             '<p class="font-bold text-slate-100 text-sm truncate">' + escHtml(item.nombre) + '</p>' +
             '<p class="text-xs text-slate-400 truncate mt-0.5">' + escHtml(item.direccion) + '</p>' +
@@ -711,7 +706,7 @@
         CHECKLIST_ITEMS.forEach((item, idx) => {
           const ck = !!o.checklist[item.id];
           checklistHtml +=
-            '<button type="button" onclick="toggleCheck('' + item.id + '')" class="p-3 rounded-xl border text-left transition flex items-start gap-3 ' +
+            '<button type="button" onclick="toggleCheck(\'' + item.id + '\')" class="p-3 rounded-xl border text-left transition flex items-start gap-3 ' +
             (ck ? 'bg-emerald-950/35 border-emerald-600/60' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700') + '">' +
             '<div class="mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 border ' +
             (ck ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'bg-slate-900 border-slate-700 text-transparent') + '">✓</div>' +
@@ -725,7 +720,7 @@
         PRODUCTOS.forEach(p => {
           const act = (o.quimica.productosUsados || []).includes(p);
           prodsHtml +=
-            '<button type="button" onclick="toggleProducto('' + escHtml(p) + '')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ' +
+            '<button type="button" onclick="toggleProducto(\'' + escHtml(p) + '\')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ' +
             (act ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600') + '">' +
             (act ? '✓ ' : '+ ') + escHtml(p) + '</button>';
         });
@@ -742,7 +737,7 @@
               '<span class="absolute top-2.5 left-2.5 text-[11px] font-black px-2.5 py-1 rounded-lg uppercase shadow ' +
               (f.type === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 text-slate-950') + '">' +
               (f.type === 'before' ? 'Antes' : 'Después') + '</span>' +
-              '<button type="button" onclick="deletePhoto('' + escHtml(f.id) + '')" class="no-print absolute top-2.5 right-2.5 bg-slate-950/80 hover:bg-rose-600 text-white w-7 h-7 rounded-lg text-xs font-bold">✕</button>' +
+              '<button type="button" onclick="deletePhoto(\'' + escHtml(f.id) + '\')" class="no-print absolute top-2.5 right-2.5 bg-slate-950/80 hover:bg-rose-600 text-white w-7 h-7 rounded-lg text-xs font-bold">✕</button>' +
               '</div><div class="p-3 flex justify-between items-center gap-2">' +
               '<p class="text-xs text-slate-200 font-medium truncate">' + escHtml(f.caption) + '</p>' +
               '<span class="text-[11px] text-slate-500 shrink-0">' + escHtml(f.timestamp) + ' hrs</span></div></div>';
@@ -781,7 +776,7 @@
           '<option value="Ángel"' + (o.tecnico === 'Ángel' ? ' selected' : '') + '>Técnico: Ángel</option>' +
           '<option value="Anai"' + (o.tecnico === 'Anai' ? ' selected' : '') + '>Técnico: Anai</option>' +
           '</select>' +
-          '<button type="button" onclick="askDeleteOrder('' + escHtml(o.id) + '', event)" class="px-2.5 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-600 text-rose-200 hover:text-white text-xs font-bold border border-rose-700/60 transition">🗑️ Eliminar</button>' +
+          '<button type="button" onclick="askDeleteOrder(\'' + escHtml(o.id) + '\', event)" class="px-2.5 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-600 text-rose-200 hover:text-white text-xs font-bold border border-rose-700/60 transition">🗑️ Eliminar</button>' +
           '</div>' +
           '<button onclick="copyClientLink()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700">🔗 Copiar Link Portal Cliente</button>' +
           '</div></div>' +
@@ -815,9 +810,9 @@
           '<h3 class="font-bold text-lg text-white">🧪 Control Químico e Insumos Aplicados</h3>' +
           '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
           '<div class="p-4 rounded-xl border ' + clBadge.box + '"><div class="flex justify-between items-center mb-2"><label class="text-xs font-bold uppercase text-slate-300">Cloro Libre (ppm)</label><span class="text-xs font-bold ' + clBadge.cls + '">' + clBadge.text + '</span></div>' +
-          '<input type="number" step="0.1" min="0" max="10" value="' + escHtml(o.quimica.cloro) + '" onchange="updateQuimica('cloro', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
+          '<input type="number" step="0.1" min="0" max="10" value="' + escHtml(o.quimica.cloro) + '" onchange="updateQuimica(\'cloro\', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
           '<div class="p-4 rounded-xl border ' + phBadge.box + '"><div class="flex justify-between items-center mb-2"><label class="text-xs font-bold uppercase text-slate-300">Nivel de pH</label><span class="text-xs font-bold ' + phBadge.cls + '">' + phBadge.text + '</span></div>' +
-          '<input type="number" step="0.1" min="6.0" max="8.5" value="' + escHtml(o.quimica.ph) + '" onchange="updateQuimica('ph', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
+          '<input type="number" step="0.1" min="6.0" max="8.5" value="' + escHtml(o.quimica.ph) + '" onchange="updateQuimica(\'ph\', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
           '</div>' +
           '<div><p class="text-xs font-semibold text-slate-400 mb-2">Productos dosificados en esta visita:</p><div class="flex flex-wrap gap-2">' + prodsHtml + '</div></div>' +
           '<div><label class="block text-xs font-semibold text-slate-400 mb-1.5">Observaciones técnicas para el cliente:</label>' +
@@ -828,8 +823,8 @@
           '<div><h3 class="font-bold text-lg text-white">📸 Registro Fotográfico (Antes / Después)</h3><p class="text-xs text-slate-400">Carga fotos desde la cámara o galería del teléfono</p></div>' +
           '<div class="no-print bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">' +
           '<div class="flex rounded-xl overflow-hidden border border-slate-700 shrink-0">' +
-          '<button type="button" onclick="setPhotoType('before')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Antes</button>' +
-          '<button type="button" onclick="setPhotoType('after')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'after' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Después</button>' +
+          '<button type="button" onclick="setPhotoType(\'before\')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Antes</button>' +
+          '<button type="button" onclick="setPhotoType(\'after\')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'after' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Después</button>' +
           '</div>' +
           '<input id="photo-caption-input" type="text" placeholder="Descripción breve (opcional)..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200" />' +
           '<label class="cursor-pointer px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs text-center shrink-0">📷 Subir Foto' +
@@ -837,7 +832,6 @@
           '</div>' + fotosHtml + '</div>' +
           '</section></main>';
       } else {
-        // VISTA PORTAL CLIENTE
         let clientChecklist = '';
         CHECKLIST_ITEMS.forEach(item => {
           const ck = !!o.checklist[item.id];
