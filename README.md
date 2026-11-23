@@ -1,1 +1,920 @@
-# Recepci-n-clientes
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TACTICALPOOL | Precisión en cada gota</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body { background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .print-card { border: 1px solid #cbd5e1 !important; box-shadow: none !important; background: white !important; color: black !important; }
+      .print-card * { color: #0f172a !important; }
+    }
+    .print-only { display: none; }
+    canvas { touch-action: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased min-h-screen flex flex-col">
+
+  <!-- NOTIFICACION FLOTANTE -->
+  <div id="toast" class="no-print hidden fixed bottom-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl border border-cyan-300 flex items-center gap-2">
+    <span>✓</span>
+    <span id="toast-text"></span>
+  </div>
+
+  <!-- BARRA SUPERIOR -->
+  <header class="no-print sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg">
+          TP
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-black tracking-wider text-lg text-white">TACTICALPOOL</h1>
+            <span class="hidden sm:inline-block text-[11px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700/50 font-medium">
+              +56 9 4117 6083
+            </span>
+          </div>
+          <p class="text-xs text-cyan-400 italic">"Precisión en cada gota"</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center">
+          <button id="btn-mode-tech" onclick="setViewMode('tech')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-cyan-500 text-slate-950 shadow">
+            🛠️ Vista Técnico
+          </button>
+          <button id="btn-mode-client" onclick="setViewMode('client')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white">
+            📱 Portal Cliente
+          </button>
+        </div>
+        <button onclick="window.print()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold border border-slate-700 transition">
+          🖨️ Certificado PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ENCABEZADO IMPRESION PDF -->
+  <div id="print-header" class="print-only p-6 border-b-2 border-slate-800 mb-4"></div>
+
+  <!-- CONTENIDO DINAMICO -->
+  <div id="app-container" class="flex-1"></div>
+
+  <!-- PIE DE PAGINA -->
+  <footer class="border-t border-slate-900 py-5 px-4 text-center text-xs text-slate-500">
+    <strong class="text-slate-300">TACTICALPOOL</strong> • "Precisión en cada gota" • Región de Valparaíso, Chile • Contacto: +56 9 4117 6083
+  </footer>
+
+  <!-- MODAL NUEVA VISITA -->
+  <div id="modal-new" class="no-print hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="font-black text-lg text-white">Agendar Nueva Visita</h3>
+        <button onclick="closeNewModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form onsubmit="createNewClient(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nombre del Cliente *</label>
+          <input id="new-nombre" type="text" required placeholder="Ej. Familia Pérez" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Dirección / Comuna *</label>
+          <input id="new-direccion" type="text" required placeholder="Ej. Hacienda Lo Orozco, Casablanca" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">WhatsApp (569...)</label>
+            <input id="new-telefono" type="text" value="569" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Hora Programada</label>
+            <input id="new-hora" type="time" value="10:00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tipo de Piscina</label>
+            <input id="new-piscina" type="text" value="Hormigón • 40.000 L" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Técnico Asignado</label>
+            <select id="new-tecnico" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+              <option value="Ángel">Ángel</option>
+              <option value="Anai">Anai</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Notas de acceso</label>
+          <input id="new-notas" type="text" placeholder="Clave portón, mascotas, horario bomba..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeNewModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm font-semibold">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-sm font-black">Guardar Visita</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const CHECKLIST_ITEMS = [
+      { id: 'superficial', label: 'Limpieza superficial', desc: 'Retiro de hojas, insectos y sólidos flotantes con chinguillo.' },
+      { id: 'skimmer', label: 'Limpieza skimmer', desc: 'Vaciado y lavado de canastillo de skimmer y revisión de compuerta.' },
+      { id: 'canastillos_bomba', label: 'Limpieza canastillos bomba', desc: 'Cierre de válvulas, purga y limpieza de prefiltro de motobomba.' },
+      { id: 'retrolavado', label: 'Retrolavado', desc: 'Lavado a contracorriente del filtro hasta visor cristalino.' },
+      { id: 'enjuague', label: 'Enjuague', desc: 'Asentamiento de lecho filtrante y expulsión de residuos residuales.' },
+      { id: 'cepillado', label: 'Cepillado', desc: 'Cepillado de muros, escaleras, línea de flotación y rincones.' },
+      { id: 'productos', label: 'Aplicación de productos', desc: 'Dosificación calculada según volumen y temperatura del agua.' },
+      { id: 'cloro_ph', label: 'Nivel cloro y ph', desc: 'Medición fotométrica/reactivos y balance de parámetros.' },
+      { id: 'aspirado', label: 'Aspirado', desc: 'Aspirado de fondo de piscina eliminando sedimentos finos.' }
+    ];
+
+    const PRODUCTOS = [
+      'Cloro granulado',
+      'Tabletas triple acción',
+      'Regulador pH-',
+      'Regulador pH+',
+      'Alguicida',
+      'Clarificador'
+    ];
+
+    function makeDemoSvg(type, title, subtitle) {
+      const isBefore = type === 'before';
+      const c1 = isBefore ? '#0f4c5c' : '#0077b6';
+      const c2 = isBefore ? '#335c67' : '#00b4d8';
+      const badge = isBefore ? 'RECEPCIÓN / ANTES' : 'ENTREGA / DESPUÉS';
+      const badgeColor = isBefore ? '#f59e0b' : '#10b981';
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">' +
+        '<rect width="800" height="480" fill="' + c1 + '"/>' +
+        '<circle cx="640" cy="110" r="150" fill="' + c2 + '" opacity="0.45"/>' +
+        '<rect x="36" y="36" width="230" height="38" rx="8" fill="#0f172a"/>' +
+        '<text x="151" y="61" font-family="sans-serif" font-size="15" font-weight="bold" fill="' + badgeColor + '" text-anchor="middle">' + badge + '</text>' +
+        '<text x="36" y="395" font-family="sans-serif" font-size="30" font-weight="bold" fill="#ffffff">' + title + '</text>' +
+        '<text x="36" y="432" font-family="sans-serif" font-size="19" fill="#e2e8f0">' + subtitle + ' • Tacticalpool</text>' +
+        '</svg>';
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    function todayStr() {
+      return new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function nowTimeStr() {
+      return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const DEFAULT_ORDERS = [
+      {
+        id: 'TP-2026-101',
+        nombre: 'Familia Valdés Echeverría',
+        direccion: 'Condominio Bosques de Montemar, Parcela 14, Concón',
+        telefono: '56987654321',
+        tipoPiscina: 'Hormigón Pintado • 45.000 L',
+        tecnico: 'Ángel',
+        fechaServicio: todayStr(),
+        notas: 'Portón automático clave #4589. Perro labrador amigable en patio trasero.',
+        estado: 'En Servicio',
+        horaProgramada: '09:30',
+        horaLlegada: '09:34',
+        horaSalida: null,
+        duracionMinutos: null,
+        checklist: {
+          superficial: true, skimmer: true, canastillos_bomba: true,
+          retrolavado: true, enjuague: true, cepillado: true,
+          productos: false, cloro_ph: true, aspirado: false
+        },
+        quimica: { cloro: 1.8, ph: 7.4, productosUsados: ['Cloro granulado', 'Clarificador'] },
+        notasTecnicas: 'Acumulación moderada de hojas por viento costero. Presión de filtro normalizada tras retrolavado.',
+        fotos: [
+          {
+            id: 'f-1',
+            type: 'before',
+            url: makeDemoSvg('before', 'Recepción Inicial 09:34 hrs', 'Hojas en superficie y leve turbidez'),
+            caption: 'Estado inicial antes de limpieza superficial',
+            timestamp: '09:36'
+          }
+        ],
+        clientApproval: { aprobado: false, clientName: '', comentario: '', firmaDataUrl: '', aprobadoAt: null }
+      },
+      {
+        id: 'TP-2026-102',
+        nombre: 'Rodrigo Maturana',
+        direccion: 'Parcela Lo Orozco Km 12, Casa 4, Casablanca',
+        telefono: '56991234567',
+        tipoPiscina: 'Fibra de Vidrio • 32.000 L',
+        tecnico: 'Anai',
+        fechaServicio: todayStr(),
+        notas: 'Avisar 15 minutos antes por WhatsApp para abrir acceso.',
+        estado: 'Pendiente',
+        horaProgramada: '11:30',
+        horaLlegada: null,
+        horaSalida: null,
+        duracionMinutos: null,
+        checklist: {
+          superficial: false, skimmer: false, canastillos_bomba: false,
+          retrolavado: false, enjuague: false, cepillado: false,
+          productos: false, cloro_ph: false, aspirado: false
+        },
+        quimica: { cloro: 1.5, ph: 7.4, productosUsados: [] },
+        notasTecnicas: '',
+        fotos: [],
+        clientApproval: { aprobado: false, clientName: '', comentario: '', firmaDataUrl: '', aprobadoAt: null }
+      },
+      {
+        id: 'TP-2026-103',
+        nombre: 'Carolina Sepúlveda',
+        direccion: 'Jardín del Mar, Av. Borgoño 1420, Viña del Mar',
+        telefono: '56976543210',
+        tipoPiscina: 'Revestimiento Fulget • 38.000 L',
+        tecnico: 'Ángel',
+        fechaServicio: todayStr(),
+        notas: 'Bomba programada de 10:00 a 16:00 hrs.',
+        estado: 'Finalizado',
+        horaProgramada: '08:00',
+        horaLlegada: '08:05',
+        horaSalida: '08:52',
+        duracionMinutos: 47,
+        checklist: {
+          superficial: true, skimmer: true, canastillos_bomba: true,
+          retrolavado: true, enjuague: true, cepillado: true,
+          productos: true, cloro_ph: true, aspirado: true
+        },
+        quimica: { cloro: 2.2, ph: 7.3, productosUsados: ['Cloro granulado', 'Alguicida', 'Tabletas triple acción'] },
+        notasTecnicas: 'Mantenimiento preventivo completo. Agua cristalina y parámetros en rango óptimo.',
+        fotos: [
+          {
+            id: 'f-2',
+            type: 'before',
+            url: makeDemoSvg('before', 'Recepción 08:05 hrs', 'Sedimento fino en zona profunda'),
+            caption: 'Antes del aspirado de fondo',
+            timestamp: '08:07'
+          },
+          {
+            id: 'f-3',
+            type: 'after',
+            url: makeDemoSvg('after', 'Entrega Final 08:52 hrs', 'Agua cristalina y fondo impecable'),
+            caption: 'Servicio entregado - Parámetros óptimos',
+            timestamp: '08:50'
+          }
+        ],
+        clientApproval: {
+          aprobado: true,
+          clientName: 'Carolina Sepúlveda',
+          comentario: 'Excelente servicio como siempre, muy puntuales y prolijos.',
+          firmaDataUrl: '',
+          aprobadoAt: '09:15'
+        }
+      }
+    ];
+
+    let orders = [];
+    try {
+      const saved = localStorage.getItem('tacticalpool_orders_v2');
+      orders = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    } catch (e) {
+      orders = JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    }
+
+    let activeOrderId = orders[0].id;
+    let viewMode = 'tech';
+    let searchTerm = '';
+    let selectedPhotoType = 'after';
+    let currentSignatureData = '';
+
+    (function checkUrlParams() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const ficha = params.get('ficha');
+        const orden = params.get('orden');
+        if (ficha) {
+          const decoded = JSON.parse(decodeURIComponent(escape(atob(ficha))));
+          if (decoded && decoded.id) {
+            const idx = orders.findIndex(o => o.id === decoded.id);
+            if (idx >= 0) orders[idx] = decoded;
+            else orders.unshift(decoded);
+            activeOrderId = decoded.id;
+            viewMode = 'client';
+          }
+        } else if (orden) {
+          activeOrderId = orden;
+          viewMode = 'client';
+        }
+      } catch (err) {
+        console.warn('URL param error', err);
+      }
+    })();
+
+    function saveOrders() {
+      try {
+        localStorage.setItem('tacticalpool_orders_v2', JSON.stringify(orders));
+      } catch (e) {}
+    }
+
+    function getActiveOrder() {
+      return orders.find(o => o.id === activeOrderId) || orders[0];
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      const txt = document.getElementById('toast-text');
+      if (!el || !txt) return;
+      txt.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function escHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function calcMinutes(startStr, endStr) {
+      if (!startStr || !endStr) return 45;
+      const p1 = startStr.split(':').map(Number);
+      const p2 = endStr.split(':').map(Number);
+      const diff = (p2[0] * 60 + p2[1]) - (p1[0] * 60 + p1[1]);
+      return diff > 0 ? diff : 1;
+    }
+
+    function getChlorineBadge(val) {
+      const n = parseFloat(val);
+      if (isNaN(n)) return { text: 'Sin dato', cls: 'text-slate-400', box: 'bg-slate-800 border-slate-700' };
+      if (n < 1.0) return { text: 'Bajo (<1.0 ppm)', cls: 'text-amber-400', box: 'bg-amber-950/60 border-amber-700/50' };
+      if (n <= 3.0) return { text: 'Óptimo (1.0 - 3.0 ppm)', cls: 'text-emerald-400', box: 'bg-emerald-950/60 border-emerald-700/50' };
+      return { text: 'Alto (>3.0 ppm)', cls: 'text-rose-400', box: 'bg-rose-950/60 border-rose-700/50' };
+    }
+
+    function getPhBadge(val) {
+      const n = parseFloat(val);
+      if (isNaN(n)) return { text: 'Sin dato', cls: 'text-slate-400', box: 'bg-slate-800 border-slate-700' };
+      if (n < 7.2) return { text: 'Ácido (<7.2)', cls: 'text-amber-400', box: 'bg-amber-950/60 border-amber-700/50' };
+      if (n <= 7.6) return { text: 'Óptimo (7.2 - 7.6)', cls: 'text-emerald-400', box: 'bg-emerald-950/60 border-emerald-700/50' };
+      return { text: 'Alcalino (>7.6)', cls: 'text-rose-400', box: 'bg-rose-950/60 border-rose-700/50' };
+    }
+
+    function statusClass(estado) {
+      if (estado === 'En Camino') return 'bg-amber-950/80 text-amber-300 border-amber-600/50';
+      if (estado === 'En Servicio') return 'bg-cyan-950/80 text-cyan-300 border-cyan-500/50';
+      if (estado === 'Finalizado') return 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50';
+      return 'bg-slate-800 text-slate-300 border-slate-700';
+    }
+
+    function buildClientShareUrl(order) {
+      const base = window.location.href.split('?')[0];
+      const lite = {
+        ...order,
+        fotos: order.fotos.map(f => ({
+          ...f,
+          url: f.url.startsWith('data:image/svg')
+            ? f.url
+            : makeDemoSvg(f.type, f.caption || (f.type === 'before' ? 'Recepción en Terreno' : 'Entrega Final'), 'Orden ' + order.id)
+        }))
+      };
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(lite))));
+      return base + '?orden=' + encodeURIComponent(order.id) + '&ficha=' + encodeURIComponent(encoded);
+    }
+
+    function openWhatsApp(phone, msg) {
+      const clean = String(phone || '').replace(/[^0-9]/g, '');
+      window.open('https://wa.me/' + clean + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      const bTech = document.getElementById('btn-mode-tech');
+      const bClient = document.getElementById('btn-mode-client');
+      if (mode === 'tech') {
+        bTech.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-cyan-500 text-slate-950 shadow';
+        bClient.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white';
+      } else {
+        bTech.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white';
+        bClient.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-emerald-500 text-slate-950 shadow';
+      }
+      render();
+    }
+
+    function selectOrder(id) {
+      activeOrderId = id;
+      render();
+    }
+
+    function updateSearch(val) {
+      searchTerm = val;
+      render();
+    }
+
+    function changeTech(val) {
+      const o = getActiveOrder();
+      o.tecnico = val;
+      saveOrders();
+      render();
+    }
+
+    function notifyEnCamino() {
+      const o = getActiveOrder();
+      const now = nowTimeStr();
+      o.estado = 'En Camino';
+      saveOrders();
+      render();
+      showToast('Estado: En Camino');
+      const msg = 'Hola ' + o.nombre + ', te saluda *' + o.tecnico + '* de *TACTICALPOOL* ("Precisión en cada gota"). 🚐💧\n\nTe aviso que voy *en camino* hacia tu domicilio (' + o.direccion + ') para el mantenimiento de tu piscina. Hora de aviso: ' + now + ' hrs.';
+      openWhatsApp(o.telefono, msg);
+    }
+
+    function notifyLlegada() {
+      const o = getActiveOrder();
+      const now = nowTimeStr();
+      o.estado = 'En Servicio';
+      if (!o.horaLlegada) o.horaLlegada = now;
+      saveOrders();
+      render();
+      showToast('Llegada registrada: ' + o.horaLlegada + ' hrs');
+      const msg = 'Hola ' + o.nombre + ', *TACTICALPOOL* informa que ya llegamos a tu domicilio e iniciamos la *Recepción del Servicio* a las *' + o.horaLlegada + ' hrs*. 🏊‍♂️✅\n\nRealizaremos el protocolo técnico completo de 9 puntos.';
+      openWhatsApp(o.telefono, msg);
+    }
+
+    function notifyEntrega() {
+      const o = getActiveOrder();
+      const now = nowTimeStr();
+      if (!o.horaLlegada) o.horaLlegada = now;
+      o.horaSalida = now;
+      o.duracionMinutos = calcMinutes(o.horaLlegada, now);
+      o.estado = 'Finalizado';
+      saveOrders();
+      render();
+      showToast('Servicio entregado (' + now + ' hrs)');
+      const done = CHECKLIST_ITEMS.filter(i => o.checklist[i.id]).length;
+      const link = buildClientShareUrl(o);
+      const msg = 'Hola ' + o.nombre + ', *TACTICALPOOL* ha finalizado la *Entrega del Servicio* a las *' + now + ' hrs* (' + o.duracionMinutos + ' min en sitio). 💧✨\n\n📋 *Checklist:* ' + done + '/9 puntos completados\n🧪 *Cloro:* ' + o.quimica.cloro + ' ppm | *pH:* ' + o.quimica.ph + '\n\nRevisa tus fotos, checklist y firma tu recepción conforme aquí:\n' + link;
+      openWhatsApp(o.telefono, msg);
+    }
+
+    function copyClientLink() {
+      const link = buildClientShareUrl(getActiveOrder());
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => showToast('Enlace del Portal Cliente copiado'));
+      } else {
+        prompt('Copia este enlace para enviarlo al cliente:', link);
+      }
+    }
+
+    function toggleCheck(key) {
+      const o = getActiveOrder();
+      o.checklist[key] = !o.checklist[key];
+      saveOrders();
+      render();
+    }
+
+    function setAllChecks(val) {
+      const o = getActiveOrder();
+      CHECKLIST_ITEMS.forEach(item => { o.checklist[item.id] = val; });
+      saveOrders();
+      render();
+      showToast(val ? 'Los 9 puntos marcados' : 'Checklist limpiado');
+    }
+
+    function updateQuimica(field, val) {
+      const o = getActiveOrder();
+      o.quimica[field] = val;
+      saveOrders();
+      render();
+    }
+
+    function toggleProducto(prod) {
+      const o = getActiveOrder();
+      const list = o.quimica.productosUsados || [];
+      const idx = list.indexOf(prod);
+      if (idx >= 0) list.splice(idx, 1);
+      else list.push(prod);
+      o.quimica.productosUsados = list;
+      saveOrders();
+      render();
+    }
+
+    function updateNotasTecnicas(val) {
+      const o = getActiveOrder();
+      o.notasTecnicas = val;
+      saveOrders();
+    }
+
+    function setPhotoType(t) {
+      selectedPhotoType = t;
+      render();
+    }
+
+    function handlePhotoFiles(input) {
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+      const captionInput = document.getElementById('photo-caption-input');
+      const customCaption = captionInput ? captionInput.value.trim() : '';
+      const o = getActiveOrder();
+      const now = nowTimeStr();
+
+      let processed = 0;
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const maxW = 850;
+            let w = img.width, h = img.height;
+            if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            o.fotos.push({
+              id: 'ph-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+              type: selectedPhotoType,
+              url: canvas.toDataURL('image/jpeg', 0.72),
+              caption: customCaption || (selectedPhotoType === 'before' ? 'Recepción / Antes' : 'Entrega / Después'),
+              timestamp: now
+            });
+            processed++;
+            if (processed === files.length) {
+              saveOrders();
+              render();
+              showToast(files.length + ' foto(s) agregada(s)');
+            }
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function deletePhoto(id) {
+      const o = getActiveOrder();
+      o.fotos = o.fotos.filter(f => f.id !== id);
+      saveOrders();
+      render();
+      showToast('Foto eliminada');
+    }
+
+    function openNewModal() { document.getElementById('modal-new').classList.remove('hidden'); }
+    function closeNewModal() { document.getElementById('modal-new').classList.add('hidden'); }
+
+    function createNewClient(e) {
+      e.preventDefault();
+      const nombre = document.getElementById('new-nombre').value.trim();
+      if (!nombre) return;
+      const newId = 'TP-2026-' + (101 + orders.length);
+      const nueva = {
+        id: newId,
+        nombre: nombre,
+        direccion: document.getElementById('new-direccion').value.trim() || 'Región de Valparaíso',
+        telefono: document.getElementById('new-telefono').value.replace(/[^0-9]/g, ''),
+        tipoPiscina: document.getElementById('new-piscina').value.trim(),
+        tecnico: document.getElementById('new-tecnico').value,
+        fechaServicio: todayStr(),
+        notas: document.getElementById('new-notas').value.trim(),
+        estado: 'Pendiente',
+        horaProgramada: document.getElementById('new-hora').value || '10:00',
+        horaLlegada: null,
+        horaSalida: null,
+        duracionMinutos: null,
+        checklist: {
+          superficial: false, skimmer: false, canastillos_bomba: false,
+          retrolavado: false, enjuague: false, cepillado: false,
+          productos: false, cloro_ph: false, aspirado: false
+        },
+        quimica: { cloro: 1.5, ph: 7.4, productosUsados: [] },
+        notasTecnicas: '',
+        fotos: [],
+        clientApproval: { aprobado: false, clientName: '', comentario: '', firmaDataUrl: '', aprobadoAt: null }
+      };
+      orders.unshift(nueva);
+      activeOrderId = newId;
+      saveOrders();
+      closeNewModal();
+      render();
+      showToast('Visita ' + newId + ' agendada');
+    }
+
+    function initSignatureCanvas() {
+      const canvas = document.getElementById('sig-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      let drawing = false;
+
+      function pos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: (cx - rect.left) * (canvas.width / rect.width),
+          y: (cy - rect.top) * (canvas.height / rect.height)
+        };
+      }
+
+      canvas.onmousedown = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+      canvas.onmousemove = (e) => { if (!drawing) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+      canvas.onmouseup = () => { if (drawing) { drawing = false; currentSignatureData = canvas.toDataURL('image/png'); } };
+      canvas.onmouseleave = () => { if (drawing) { drawing = false; currentSignatureData = canvas.toDataURL('image/png'); } };
+
+      canvas.ontouchstart = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+      canvas.ontouchmove = (e) => { if (!drawing) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+      canvas.ontouchend = () => { if (drawing) { drawing = false; currentSignatureData = canvas.toDataURL('image/png'); } };
+    }
+
+    function clearSignature() {
+      const canvas = document.getElementById('sig-canvas');
+      if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      currentSignatureData = '';
+    }
+
+    function submitClientApproval(e) {
+      e.preventDefault();
+      const o = getActiveOrder();
+      const nameVal = document.getElementById('client-sign-name').value.trim() || o.nombre;
+      const commVal = document.getElementById('client-sign-comment').value.trim();
+      o.clientApproval = {
+        aprobado: true,
+        clientName: nameVal,
+        comentario: commVal,
+        firmaDataUrl: currentSignatureData,
+        aprobadoAt: nowTimeStr()
+      };
+      saveOrders();
+      render();
+      showToast('¡Recepción Conforme registrada!');
+    }
+
+    function render() {
+      const o = getActiveOrder();
+      const doneCount = CHECKLIST_ITEMS.filter(i => o.checklist[i.id]).length;
+      const pct = Math.round((doneCount / CHECKLIST_ITEMS.length) * 100);
+      const clBadge = getChlorineBadge(o.quimica.cloro);
+      const phBadge = getPhBadge(o.quimica.ph);
+
+      document.getElementById('print-header').innerHTML =
+        '<div class="flex justify-between items-start">' +
+        '<div><h1 class="text-2xl font-black text-slate-900">TACTICALPOOL</h1>' +
+        '<p class="text-sm text-slate-600 italic">"Precisión en cada gota"</p>' +
+        '<p class="text-xs text-slate-500 mt-1">Región de Valparaíso, Chile • WhatsApp: +56 9 4117 6083</p></div>' +
+        '<div class="text-right"><p class="font-bold text-slate-900">CERTIFICADO DE RECEPCIÓN Y ENTREGA</p>' +
+        '<p class="text-sm text-slate-700">Orden: <strong>' + escHtml(o.id) + '</strong></p>' +
+        '<p class="text-xs text-slate-500">Fecha: ' + escHtml(o.fechaServicio) + '</p></div></div>';
+
+      const container = document.getElementById('app-container');
+
+      if (viewMode === 'tech') {
+        const filtered = orders.filter(item =>
+          item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.direccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.id.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        let listHtml = '';
+        filtered.forEach(item => {
+          const sel = item.id === o.id;
+          const d = CHECKLIST_ITEMS.filter(c => item.checklist[c.id]).length;
+          listHtml +=
+            '<button onclick="selectOrder(\'' + escHtml(item.id) + '\')" class="w-full text-left p-3.5 rounded-xl border transition ' +
+            (sel ? 'bg-slate-800/90 border-cyan-500 shadow-lg' : 'bg-slate-950/60 border-slate-800 hover:border-slate-700') + '">' +
+            '<div class="flex items-center justify-between gap-2 mb-1">' +
+            '<span class="text-xs font-mono text-cyan-400 font-bold">' + escHtml(item.id) + '</span>' +
+            '<span class="text-[11px] px-2 py-0.5 rounded-full border font-semibold ' + statusClass(item.estado) + '">' + escHtml(item.estado) + '</span>' +
+            '</div>' +
+            '<p class="font-bold text-slate-100 text-sm truncate">' + escHtml(item.nombre) + '</p>' +
+            '<p class="text-xs text-slate-400 truncate mt-0.5">' + escHtml(item.direccion) + '</p>' +
+            '<div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-800 text-[11px] text-slate-400">' +
+            '<span>👷 ' + escHtml(item.tecnico) + ' • ⏰ ' + escHtml(item.horaProgramada) + '</span>' +
+            '<span class="text-cyan-400 font-semibold">' + d + '/9 ítems</span>' +
+            '</div></button>';
+        });
+
+        let checklistHtml = '';
+        CHECKLIST_ITEMS.forEach((item, idx) => {
+          const ck = !!o.checklist[item.id];
+          checklistHtml +=
+            '<button type="button" onclick="toggleCheck(\'' + item.id + '\')" class="p-3 rounded-xl border text-left transition flex items-start gap-3 ' +
+            (ck ? 'bg-emerald-950/35 border-emerald-600/60' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700') + '">' +
+            '<div class="mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 border ' +
+            (ck ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'bg-slate-900 border-slate-700 text-transparent') + '">✓</div>' +
+            '<div class="min-w-0"><div class="flex items-center gap-2">' +
+            '<span class="text-xs font-mono text-slate-500">0' + (idx + 1) + '</span>' +
+            '<p class="font-bold text-sm ' + (ck ? 'text-emerald-200' : 'text-slate-200') + '">' + escHtml(item.label) + '</p>' +
+            '</div><p class="text-[11px] text-slate-400 mt-0.5">' + escHtml(item.desc) + '</p></div></button>';
+        });
+
+        let prodsHtml = '';
+        PRODUCTOS.forEach(p => {
+          const act = (o.quimica.productosUsados || []).includes(p);
+          prodsHtml +=
+            '<button type="button" onclick="toggleProducto(\'' + escHtml(p) + '\')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ' +
+            (act ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600') + '">' +
+            (act ? '✓ ' : '+ ') + escHtml(p) + '</button>';
+        });
+
+        let fotosHtml = '';
+        if (!o.fotos.length) {
+          fotosHtml = '<div class="text-center py-8 border border-dashed border-slate-800 rounded-xl text-slate-500 text-sm">Aún no hay fotografías cargadas para esta visita.</div>';
+        } else {
+          fotosHtml = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">';
+          o.fotos.forEach(f => {
+            fotosHtml +=
+              '<div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden relative">' +
+              '<div class="relative"><img src="' + f.url + '" class="w-full h-48 object-cover" />' +
+              '<span class="absolute top-2.5 left-2.5 text-[11px] font-black px-2.5 py-1 rounded-lg uppercase shadow ' +
+              (f.type === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 text-slate-950') + '">' +
+              (f.type === 'before' ? 'Antes' : 'Después') + '</span>' +
+              '<button type="button" onclick="deletePhoto(\'' + escHtml(f.id) + '\')" class="no-print absolute top-2.5 right-2.5 bg-slate-950/80 hover:bg-rose-600 text-white w-7 h-7 rounded-lg text-xs font-bold">✕</button>' +
+              '</div><div class="p-3 flex justify-between items-center gap-2">' +
+              '<p class="text-xs text-slate-200 font-medium truncate">' + escHtml(f.caption) + '</p>' +
+              '<span class="text-[11px] text-slate-500 shrink-0">' + escHtml(f.timestamp) + ' hrs</span></div></div>';
+          });
+          fotosHtml += '</div>';
+        }
+
+        container.innerHTML =
+          '<main class="max-w-7xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+          '<aside class="no-print lg:col-span-4 space-y-4">' +
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">' +
+          '<div class="flex items-center justify-between">' +
+          '<h2 class="font-bold text-base text-white">📍 Ruta del Día (' + orders.length + ')</h2>' +
+          '<button onclick="openNewModal()" class="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs">+ Nueva Visita</button>' +
+          '</div>' +
+          '<input type="text" value="' + escHtml(searchTerm) + '" oninput="updateSearch(this.value)" placeholder="Buscar cliente, dirección u orden..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200" />' +
+          '<div class="space-y-2.5 max-h-[65vh] overflow-y-auto pr-1">' + listHtml + '</div>' +
+          '</div></aside>' +
+
+          '<section class="lg:col-span-8 space-y-5">' +
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 print-card">' +
+          '<div class="flex flex-wrap items-start justify-between gap-3">' +
+          '<div><div class="flex items-center gap-2 flex-wrap">' +
+          '<span class="text-xs font-mono bg-slate-950 text-cyan-400 px-2.5 py-1 rounded-lg border border-slate-800">' + escHtml(o.id) + '</span>' +
+          '<span class="text-xs px-2.5 py-1 rounded-full border font-bold ' + statusClass(o.estado) + '">' + escHtml(o.estado) + '</span>' +
+          '<span class="text-xs text-slate-400">Técnico: <strong class="text-white">' + escHtml(o.tecnico) + '</strong></span>' +
+          '</div>' +
+          '<h2 class="text-xl sm:text-2xl font-black text-white mt-2">' + escHtml(o.nombre) + '</h2>' +
+          '<p class="text-sm text-slate-300 mt-0.5">📍 ' + escHtml(o.direccion) + '</p>' +
+          '<p class="text-xs text-cyan-400 mt-1">🏊 ' + escHtml(o.tipoPiscina) + ' • 📞 +' + escHtml(o.telefono) + '</p></div>' +
+          '<div class="no-print flex flex-col sm:items-end gap-2">' +
+          '<select onchange="changeTech(this.value)" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-semibold">' +
+          '<option value="Ángel"' + (o.tecnico === 'Ángel' ? ' selected' : '') + '>Técnico: Ángel</option>' +
+          '<option value="Anai"' + (o.tecnico === 'Anai' ? ' selected' : '') + '>Técnico: Anai</option>' +
+          '</select>' +
+          '<button onclick="copyClientLink()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700">🔗 Copiar Link Portal Cliente</button>' +
+          '</div></div>' +
+
+          (o.notas ? '<div class="bg-amber-950/30 border border-amber-700/40 rounded-xl p-3 text-xs text-amber-200"><strong>Nota de acceso:</strong> ' + escHtml(o.notas) + '</div>' : '') +
+
+          '<div class="grid grid-cols-3 gap-3 bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">' +
+          '<div><p class="text-[11px] text-slate-400 uppercase">Programado</p><p class="text-sm sm:text-base font-bold text-slate-200">' + escHtml(o.horaProgramada) + ' hrs</p></div>' +
+          '<div><p class="text-[11px] text-cyan-400 uppercase">Llegada (Recepción)</p><p class="text-sm sm:text-base font-bold text-cyan-300">' + (o.horaLlegada ? o.horaLlegada + ' hrs' : '--:--') + '</p></div>' +
+          '<div><p class="text-[11px] text-emerald-400 uppercase">Retiro (Entrega)</p><p class="text-sm sm:text-base font-bold text-emerald-300">' + (o.horaSalida ? o.horaSalida + ' hrs (' + o.duracionMinutos + 'm)' : '--:--') + '</p></div>' +
+          '</div>' +
+
+          '<div class="no-print grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">' +
+          '<button onclick="notifyEnCamino()" class="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2">🚐 Avisar En Camino</button>' +
+          '<button onclick="notifyLlegada()" class="py-3 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2">📍 Avisar Llegada</button>' +
+          '<button onclick="notifyEntrega()" class="py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2">✅ Finalizar y Entregar</button>' +
+          '</div></div>' +
+
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 print-card">' +
+          '<div class="flex flex-wrap items-center justify-between gap-2">' +
+          '<div><h3 class="font-bold text-lg text-white">📋 Checklist Técnico de Servicio</h3><p class="text-xs text-slate-400">Marca cada labor ejecutada en la piscina</p></div>' +
+          '<div class="no-print flex items-center gap-2">' +
+          '<button onclick="setAllChecks(true)" class="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-700/50">Marcar todo</button>' +
+          '<button onclick="setAllChecks(false)" class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300">Limpiar</button>' +
+          '</div></div>' +
+          '<div><div class="flex justify-between text-xs mb-1.5"><span class="text-slate-300">Progreso del protocolo</span><span class="text-cyan-400 font-bold">' + doneCount + ' de 9 (' + pct + '%)</span></div>' +
+          '<div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800"><div class="h-full bg-gradient-to-r from-cyan-500 to-emerald-400" style="width:' + pct + '%"></div></div></div>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">' + checklistHtml + '</div></div>' +
+
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 print-card">' +
+          '<h3 class="font-bold text-lg text-white">🧪 Control Químico e Insumos Aplicados</h3>' +
+          '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
+          '<div class="p-4 rounded-xl border ' + clBadge.box + '"><div class="flex justify-between items-center mb-2"><label class="text-xs font-bold uppercase text-slate-300">Cloro Libre (ppm)</label><span class="text-xs font-bold ' + clBadge.cls + '">' + clBadge.text + '</span></div>' +
+          '<input type="number" step="0.1" min="0" max="10" value="' + escHtml(o.quimica.cloro) + '" onchange="updateQuimica(\'cloro\', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
+          '<div class="p-4 rounded-xl border ' + phBadge.box + '"><div class="flex justify-between items-center mb-2"><label class="text-xs font-bold uppercase text-slate-300">Nivel de pH</label><span class="text-xs font-bold ' + phBadge.cls + '">' + phBadge.text + '</span></div>' +
+          '<input type="number" step="0.1" min="6.0" max="8.5" value="' + escHtml(o.quimica.ph) + '" onchange="updateQuimica(\'ph\', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
+          '</div>' +
+          '<div><p class="text-xs font-semibold text-slate-400 mb-2">Productos dosificados en esta visita:</p><div class="flex flex-wrap gap-2">' + prodsHtml + '</div></div>' +
+          '<div><label class="block text-xs font-semibold text-slate-400 mb-1.5">Observaciones técnicas para el cliente:</label>' +
+          '<textarea rows="2" oninput="updateNotasTecnicas(this.value)" placeholder="Ej. Agua cristalina, presión de filtro óptima..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200">' + escHtml(o.notasTecnicas) + '</textarea></div>' +
+          '</div>' +
+
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 print-card">' +
+          '<div><h3 class="font-bold text-lg text-white">📸 Registro Fotográfico (Antes / Después)</h3><p class="text-xs text-slate-400">Carga fotos desde la cámara o galería del teléfono</p></div>' +
+          '<div class="no-print bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">' +
+          '<div class="flex rounded-xl overflow-hidden border border-slate-700 shrink-0">' +
+          '<button type="button" onclick="setPhotoType(\'before\')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Antes</button>' +
+          '<button type="button" onclick="setPhotoType(\'after\')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'after' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Después</button>' +
+          '</div>' +
+          '<input id="photo-caption-input" type="text" placeholder="Descripción breve (opcional)..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200" />' +
+          '<label class="cursor-pointer px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs text-center shrink-0">📷 Subir Foto' +
+          '<input type="file" accept="image/*" multiple onchange="handlePhotoFiles(this)" class="hidden" /></label>' +
+          '</div>' + fotosHtml + '</div>' +
+          '</section></main>';
+      } else {
+        let clientChecklist = '';
+        CHECKLIST_ITEMS.forEach(item => {
+          const ck = !!o.checklist[item.id];
+          clientChecklist +=
+            '<div class="p-3 rounded-xl border flex items-center gap-3 ' + (ck ? 'bg-emerald-950/30 border-emerald-700/40 text-emerald-100' : 'bg-slate-950/60 border-slate-800 text-slate-500') + '">' +
+            '<span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ' + (ck ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-500') + '">' + (ck ? '✓' : '•') + '</span>' +
+            '<div><p class="text-sm font-bold">' + escHtml(item.label) + '</p><p class="text-[11px] text-slate-400">' + escHtml(item.desc) + '</p></div></div>';
+        });
+
+        let clientFotos = '';
+        if (!o.fotos.length) {
+          clientFotos = '<p class="text-sm text-slate-400">El técnico aún no ha subido fotografías de esta visita.</p>';
+        } else {
+          clientFotos = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">';
+          o.fotos.forEach(f => {
+            clientFotos +=
+              '<div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">' +
+              '<div class="relative"><img src="' + f.url + '" class="w-full h-52 object-cover" />' +
+              '<span class="absolute top-3 left-3 text-xs font-black px-3 py-1 rounded-lg uppercase ' + (f.type === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 text-slate-950') + '">' +
+              (f.type === 'before' ? 'Recepción / Antes' : 'Entrega / Después') + '</span></div>' +
+              '<div class="p-3 flex justify-between items-center text-xs"><span class="text-slate-200 font-medium">' + escHtml(f.caption) + '</span><span class="text-slate-500">' + escHtml(f.timestamp) + ' hrs</span></div></div>';
+          });
+          clientFotos += '</div>';
+        }
+
+        let approvalSection = '';
+        if (o.clientApproval && o.clientApproval.aprobado) {
+          approvalSection =
+            '<div class="bg-emerald-950/40 border border-emerald-600/50 rounded-xl p-5 space-y-3">' +
+            '<div class="flex items-center justify-between flex-wrap gap-2">' +
+            '<p class="font-bold text-emerald-300 text-base">✓ Servicio Aprobado por ' + escHtml(o.clientApproval.clientName) + '</p>' +
+            '<span class="text-xs text-emerald-400">Registrado a las ' + escHtml(o.clientApproval.aprobadoAt) + ' hrs</span></div>' +
+            (o.clientApproval.comentario ? '<p class="text-sm text-slate-200 italic">"' + escHtml(o.clientApproval.comentario) + '"</p>' : '') +
+            (o.clientApproval.firmaDataUrl ? '<div class="bg-slate-900 border border-emerald-700/50 rounded-xl p-3 text-center"><img src="' + o.clientApproval.firmaDataUrl + '" class="max-h-24 mx-auto bg-slate-950 rounded-lg p-2" /></div>' : '') +
+            '</div>';
+        } else {
+          approvalSection =
+            '<form onsubmit="submitClientApproval(event)" class="no-print space-y-4">' +
+            '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
+            '<div><label class="block text-xs text-slate-400 mb-1">Nombre quien recibe</label><input id="client-sign-name" type="text" required value="' + escHtml(o.nombre) + '" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white" /></div>' +
+            '<div><label class="block text-xs text-slate-400 mb-1">Comentario (opcional)</label><input id="client-sign-comment" type="text" placeholder="Ej. Todo impecable, gracias." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white" /></div>' +
+            '</div>' +
+            '<div><div class="flex justify-between items-center mb-1"><label class="text-xs text-slate-400">Dibuja tu firma con el dedo:</label><button type="button" onclick="clearSignature()" class="text-xs text-cyan-400">Limpiar firma</button></div>' +
+            '<div class="bg-slate-950 border-2 border-dashed border-slate-700 rounded-xl overflow-hidden"><canvas id="sig-canvas" width="500" height="150" class="w-full h-36 block"></canvas></div></div>' +
+            '<button type="submit" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm shadow-lg">Confirmar Recepción Conforme</button></form>';
+        }
+
+        const usedBadges = (o.quimica.productosUsados || []).map(p =>
+          '<span class="text-xs px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700/50 font-semibold">✓ ' + escHtml(p) + '</span>'
+        ).join('');
+
+        container.innerHTML =
+          '<main class="max-w-4xl w-full mx-auto px-4 py-6 space-y-6">' +
+          '<div class="bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/50 border border-cyan-800/40 rounded-2xl p-6 shadow-xl print-card">' +
+          '<div class="flex flex-wrap items-start justify-between gap-4">' +
+          '<div><span class="text-xs font-mono text-cyan-400 font-bold">ORDEN DE SERVICIO ' + escHtml(o.id) + '</span>' +
+          '<h2 class="text-2xl font-black text-white mt-1">Hola, ' + escHtml(o.nombre) + '</h2>' +
+          '<p class="text-sm text-slate-300 mt-1">📍 ' + escHtml(o.direccion) + '</p>' +
+          '<p class="text-xs text-slate-400 mt-1">Piscina: ' + escHtml(o.tipoPiscina) + ' • Técnico: <strong class="text-cyan-300">' + escHtml(o.tecnico) + '</strong></p></div>' +
+          '<div class="text-left sm:text-right"><span class="inline-block text-xs px-3 py-1.5 rounded-full border font-bold ' + statusClass(o.estado) + '">Estado: ' + escHtml(o.estado) + '</span>' +
+          '<p class="text-xs text-slate-400 mt-2">Fecha: ' + escHtml(o.fechaServicio) + '</p></div></div>' +
+          '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-800">' +
+          '<div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800"><p class="text-xs text-slate-400">Visita Programada</p><p class="text-lg font-bold text-white">' + escHtml(o.horaProgramada) + ' hrs</p></div>' +
+          '<div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800"><p class="text-xs text-cyan-400">Recepción (Llegada)</p><p class="text-lg font-bold text-cyan-300">' + (o.horaLlegada ? o.horaLlegada + ' hrs' : 'Pendiente') + '</p></div>' +
+          '<div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800"><p class="text-xs text-emerald-400">Entrega (Retiro)</p><p class="text-lg font-bold text-emerald-300">' + (o.horaSalida ? o.horaSalida + ' hrs (' + o.duracionMinutos + ' min)' : 'En ejecución') + '</p></div>' +
+          '</div></div>' +
+
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 print-card">' +
+          '<h3 class="font-bold text-lg text-white">💧 Balance Químico del Agua</h3>' +
+          '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
+          '<div class="p-4 rounded-xl border ' + clBadge.box + '"><p class="text-xs text-slate-400 uppercase">Cloro Libre</p><div class="flex items-baseline justify-between mt-1"><span class="text-2xl font-black text-white">' + escHtml(o.quimica.cloro) + ' ppm</span><span class="text-xs font-bold ' + clBadge.cls + '">' + clBadge.text + '</span></div></div>' +
+          '<div class="p-4 rounded-xl border ' + phBadge.box + '"><p class="text-xs text-slate-400 uppercase">Nivel de pH</p><div class="flex items-baseline justify-between mt-1"><span class="text-2xl font-black text-white">' + escHtml(o.quimica.ph) + '</span><span class="text-xs font-bold ' + phBadge.cls + '">' + phBadge.text + '</span></div></div>' +
+          '</div>' +
+          (usedBadges ? '<div class="pt-2"><p class="text-xs text-slate-400 mb-2">Insumos aplicados:</p><div class="flex flex-wrap gap-2">' + usedBadges + '</div></div>' : '') +
+          (o.notasTecnicas ? '<div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-sm text-slate-300"><strong class="text-cyan-400 block text-xs uppercase mb-1">Informe del Técnico:</strong>' + escHtml(o.notasTecnicas) + '</div>' : '') +
+          '</div>' +
+
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 print-card">' +
+          '<div class="flex items-center justify-between"><h3 class="font-bold text-lg text-white">✅ Protocolo Realizado (' + doneCount + '/9)</h3><span class="text-sm font-black text-emerald-400">' + pct + '% Completado</span></div>' +
+          '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + clientChecklist + '</div></div>' +
+
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 print-card">' +
+          '<h3 class="font-bold text-lg text-white">📸 Evidencia Fotográfica del Trabajo</h3>' + clientFotos + '</div>' +
+
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 print-card">' +
+          '<h3 class="font-bold text-lg text-white">✍️ Recepción Conforme del Cliente</h3>' + approvalSection + '</div>' +
+          '</main>';
+
+        setTimeout(initSignatureCanvas, 50);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
