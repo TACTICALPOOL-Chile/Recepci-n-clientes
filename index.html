@@ -121,6 +121,24 @@
     </div>
   </div>
 
+  <!-- MODAL CONFIRMAR ELIMINACION -->
+  <div id="modal-delete" class="no-print hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-rose-700/60 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-950 border border-rose-700/60 flex items-center justify-center text-rose-400 text-lg">🗑️</div>
+        <div>
+          <h3 class="font-black text-base text-white">Eliminar Visita</h3>
+          <p id="delete-modal-subtitle" class="text-xs text-slate-400"></p>
+        </div>
+      </div>
+      <p id="delete-modal-msg" class="text-sm text-slate-300"></p>
+      <div class="pt-2 flex justify-end gap-2">
+        <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold">Cancelar</button>
+        <button type="button" onclick="confirmDeleteOrder()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const CHECKLIST_ITEMS = [
       { id: 'superficial', label: 'Limpieza superficial', desc: 'Retiro de hojas, insectos y sólidos flotantes con chinguillo.' },
@@ -168,123 +186,25 @@
       return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
     }
 
-    const DEFAULT_ORDERS = [
-      {
-        id: 'TP-2026-101',
-        nombre: 'Familia Valdés Echeverría',
-        direccion: 'Condominio Bosques de Montemar, Parcela 14, Concón',
-        telefono: '56987654321',
-        tipoPiscina: 'Hormigón Pintado • 45.000 L',
-        tecnico: 'Ángel',
-        fechaServicio: todayStr(),
-        notas: 'Portón automático clave #4589. Perro labrador amigable en patio trasero.',
-        estado: 'En Servicio',
-        horaProgramada: '09:30',
-        horaLlegada: '09:34',
-        horaSalida: null,
-        duracionMinutos: null,
-        checklist: {
-          superficial: true, skimmer: true, canastillos_bomba: true,
-          retrolavado: true, enjuague: true, cepillado: true,
-          productos: false, cloro_ph: true, aspirado: false
-        },
-        quimica: { cloro: 1.8, ph: 7.4, productosUsados: ['Cloro granulado', 'Clarificador'] },
-        notasTecnicas: 'Acumulación moderada de hojas por viento costero. Presión de filtro normalizada tras retrolavado.',
-        fotos: [
-          {
-            id: 'f-1',
-            type: 'before',
-            url: makeDemoSvg('before', 'Recepción Inicial 09:34 hrs', 'Hojas en superficie y leve turbidez'),
-            caption: 'Estado inicial antes de limpieza superficial',
-            timestamp: '09:36'
-          }
-        ],
-        clientApproval: { aprobado: false, clientName: '', comentario: '', firmaDataUrl: '', aprobadoAt: null }
-      },
-      {
-        id: 'TP-2026-102',
-        nombre: 'Rodrigo Maturana',
-        direccion: 'Parcela Lo Orozco Km 12, Casa 4, Casablanca',
-        telefono: '56991234567',
-        tipoPiscina: 'Fibra de Vidrio • 32.000 L',
-        tecnico: 'Anai',
-        fechaServicio: todayStr(),
-        notas: 'Avisar 15 minutos antes por WhatsApp para abrir acceso.',
-        estado: 'Pendiente',
-        horaProgramada: '11:30',
-        horaLlegada: null,
-        horaSalida: null,
-        duracionMinutos: null,
-        checklist: {
-          superficial: false, skimmer: false, canastillos_bomba: false,
-          retrolavado: false, enjuague: false, cepillado: false,
-          productos: false, cloro_ph: false, aspirado: false
-        },
-        quimica: { cloro: 1.5, ph: 7.4, productosUsados: [] },
-        notasTecnicas: '',
-        fotos: [],
-        clientApproval: { aprobado: false, clientName: '', comentario: '', firmaDataUrl: '', aprobadoAt: null }
-      },
-      {
-        id: 'TP-2026-103',
-        nombre: 'Carolina Sepúlveda',
-        direccion: 'Jardín del Mar, Av. Borgoño 1420, Viña del Mar',
-        telefono: '56976543210',
-        tipoPiscina: 'Revestimiento Fulget • 38.000 L',
-        tecnico: 'Ángel',
-        fechaServicio: todayStr(),
-        notas: 'Bomba programada de 10:00 a 16:00 hrs.',
-        estado: 'Finalizado',
-        horaProgramada: '08:00',
-        horaLlegada: '08:05',
-        horaSalida: '08:52',
-        duracionMinutos: 47,
-        checklist: {
-          superficial: true, skimmer: true, canastillos_bomba: true,
-          retrolavado: true, enjuague: true, cepillado: true,
-          productos: true, cloro_ph: true, aspirado: true
-        },
-        quimica: { cloro: 2.2, ph: 7.3, productosUsados: ['Cloro granulado', 'Alguicida', 'Tabletas triple acción'] },
-        notasTecnicas: 'Mantenimiento preventivo completo. Agua cristalina y parámetros en rango óptimo.',
-        fotos: [
-          {
-            id: 'f-2',
-            type: 'before',
-            url: makeDemoSvg('before', 'Recepción 08:05 hrs', 'Sedimento fino en zona profunda'),
-            caption: 'Antes del aspirado de fondo',
-            timestamp: '08:07'
-          },
-          {
-            id: 'f-3',
-            type: 'after',
-            url: makeDemoSvg('after', 'Entrega Final 08:52 hrs', 'Agua cristalina y fondo impecable'),
-            caption: 'Servicio entregado - Parámetros óptimos',
-            timestamp: '08:50'
-          }
-        ],
-        clientApproval: {
-          aprobado: true,
-          clientName: 'Carolina Sepúlveda',
-          comentario: 'Excelente servicio como siempre, muy puntuales y prolijos.',
-          firmaDataUrl: '',
-          aprobadoAt: '09:15'
-        }
-      }
-    ];
+    // Lista inicial vacia (sin clientes de demostracion)
+    const DEFAULT_ORDERS = [];
+    const STORAGE_KEY = 'tacticalpool_orders_v3';
 
     let orders = [];
     try {
-      const saved = localStorage.getItem('tacticalpool_orders_v2');
-      orders = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+      const saved = localStorage.getItem(STORAGE_KEY);
+      orders = saved ? JSON.parse(saved) : [];
     } catch (e) {
-      orders = JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+      orders = [];
     }
 
-    let activeOrderId = orders[0].id;
+    let activeOrderId = orders.length ? orders[0].id : null;
     let viewMode = 'tech';
     let searchTerm = '';
     let selectedPhotoType = 'after';
     let currentSignatureData = '';
+    let pendingDeleteId = null;
+    let pendingDeleteAll = false;
 
     (function checkUrlParams() {
       try {
@@ -311,11 +231,12 @@
 
     function saveOrders() {
       try {
-        localStorage.setItem('tacticalpool_orders_v2', JSON.stringify(orders));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
       } catch (e) {}
     }
 
     function getActiveOrder() {
+      if (!orders.length) return null;
       return orders.find(o => o.id === activeOrderId) || orders[0];
     }
 
@@ -334,7 +255,8 @@
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     function calcMinutes(startStr, endStr) {
@@ -414,6 +336,7 @@
 
     function changeTech(val) {
       const o = getActiveOrder();
+      if (!o) return;
       o.tecnico = val;
       saveOrders();
       render();
@@ -421,6 +344,7 @@
 
     function notifyEnCamino() {
       const o = getActiveOrder();
+      if (!o) return;
       const now = nowTimeStr();
       o.estado = 'En Camino';
       saveOrders();
@@ -432,6 +356,7 @@
 
     function notifyLlegada() {
       const o = getActiveOrder();
+      if (!o) return;
       const now = nowTimeStr();
       o.estado = 'En Servicio';
       if (!o.horaLlegada) o.horaLlegada = now;
@@ -444,6 +369,7 @@
 
     function notifyEntrega() {
       const o = getActiveOrder();
+      if (!o) return;
       const now = nowTimeStr();
       if (!o.horaLlegada) o.horaLlegada = now;
       o.horaSalida = now;
@@ -459,7 +385,9 @@
     }
 
     function copyClientLink() {
-      const link = buildClientShareUrl(getActiveOrder());
+      const o = getActiveOrder();
+      if (!o) return;
+      const link = buildClientShareUrl(o);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(link).then(() => showToast('Enlace del Portal Cliente copiado'));
       } else {
@@ -469,6 +397,7 @@
 
     function toggleCheck(key) {
       const o = getActiveOrder();
+      if (!o) return;
       o.checklist[key] = !o.checklist[key];
       saveOrders();
       render();
@@ -476,6 +405,7 @@
 
     function setAllChecks(val) {
       const o = getActiveOrder();
+      if (!o) return;
       CHECKLIST_ITEMS.forEach(item => { o.checklist[item.id] = val; });
       saveOrders();
       render();
@@ -484,6 +414,7 @@
 
     function updateQuimica(field, val) {
       const o = getActiveOrder();
+      if (!o) return;
       o.quimica[field] = val;
       saveOrders();
       render();
@@ -491,6 +422,7 @@
 
     function toggleProducto(prod) {
       const o = getActiveOrder();
+      if (!o) return;
       const list = o.quimica.productosUsados || [];
       const idx = list.indexOf(prod);
       if (idx >= 0) list.splice(idx, 1);
@@ -502,6 +434,7 @@
 
     function updateNotasTecnicas(val) {
       const o = getActiveOrder();
+      if (!o) return;
       o.notasTecnicas = val;
       saveOrders();
     }
@@ -512,11 +445,12 @@
     }
 
     function handlePhotoFiles(input) {
+      const o = getActiveOrder();
+      if (!o) return;
       const files = Array.from(input.files || []);
       if (!files.length) return;
       const captionInput = document.getElementById('photo-caption-input');
       const customCaption = captionInput ? captionInput.value.trim() : '';
-      const o = getActiveOrder();
       const now = nowTimeStr();
 
       let processed = 0;
@@ -554,20 +488,77 @@
 
     function deletePhoto(id) {
       const o = getActiveOrder();
+      if (!o) return;
       o.fotos = o.fotos.filter(f => f.id !== id);
       saveOrders();
       render();
       showToast('Foto eliminada');
     }
 
-    function openNewModal() { document.getElementById('modal-new').classList.remove('hidden'); }
+    // Eliminar cliente / visita
+    function askDeleteOrder(id, ev) {
+      if (ev) ev.stopPropagation();
+      const target = orders.find(x => x.id === id);
+      if (!target) return;
+      pendingDeleteId = id;
+      pendingDeleteAll = false;
+      document.getElementById('delete-modal-subtitle').textContent = 'Orden ' + target.id;
+      document.getElementById('delete-modal-msg').textContent = '¿Seguro que deseas eliminar la visita de "' + target.nombre + '"? Esta acción no se puede deshacer.';
+      document.getElementById('modal-delete').classList.remove('hidden');
+    }
+
+    function askClearAllOrders() {
+      if (!orders.length) return;
+      pendingDeleteId = null;
+      pendingDeleteAll = true;
+      document.getElementById('delete-modal-subtitle').textContent = orders.length + ' visita(s) en ruta';
+      document.getElementById('delete-modal-msg').textContent = '¿Seguro que deseas vaciar toda la lista de clientes del día?';
+      document.getElementById('modal-delete').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('modal-delete').classList.add('hidden');
+      pendingDeleteId = null;
+      pendingDeleteAll = false;
+    }
+
+    function confirmDeleteOrder() {
+      if (pendingDeleteAll) {
+        orders = [];
+        activeOrderId = null;
+        saveOrders();
+        closeDeleteModal();
+        render();
+        showToast('Lista de visitas vaciada');
+        return;
+      }
+      if (!pendingDeleteId) return;
+      const removed = orders.find(x => x.id === pendingDeleteId);
+      orders = orders.filter(x => x.id !== pendingDeleteId);
+      if (activeOrderId === pendingDeleteId) {
+        activeOrderId = orders.length ? orders[0].id : null;
+      }
+      saveOrders();
+      closeDeleteModal();
+      render();
+      showToast('Cliente "' + (removed ? removed.nombre : '') + '" eliminado');
+    }
+
+    // Modal nueva visita
+    function openNewModal() {
+      document.getElementById('new-nombre').value = '';
+      document.getElementById('new-direccion').value = '';
+      document.getElementById('new-telefono').value = '569';
+      document.getElementById('new-notas').value = '';
+      document.getElementById('modal-new').classList.remove('hidden');
+    }
     function closeNewModal() { document.getElementById('modal-new').classList.add('hidden'); }
 
     function createNewClient(e) {
       e.preventDefault();
       const nombre = document.getElementById('new-nombre').value.trim();
       if (!nombre) return;
-      const newId = 'TP-2026-' + (101 + orders.length);
+      const newId = 'TP-2026-' + String(Math.floor(100 + Math.random() * 900));
       const nueva = {
         id: newId,
         nombre: nombre,
@@ -600,6 +591,7 @@
       showToast('Visita ' + newId + ' agendada');
     }
 
+    // Firma tactil cliente
     function initSignatureCanvas() {
       const canvas = document.getElementById('sig-canvas');
       if (!canvas) return;
@@ -639,6 +631,7 @@
     function submitClientApproval(e) {
       e.preventDefault();
       const o = getActiveOrder();
+      if (!o) return;
       const nameVal = document.getElementById('client-sign-name').value.trim() || o.nombre;
       const commVal = document.getElementById('client-sign-comment').value.trim();
       o.clientApproval = {
@@ -653,8 +646,25 @@
       showToast('¡Recepción Conforme registrada!');
     }
 
+    // --- RENDER PRINCIPAL ---
     function render() {
       const o = getActiveOrder();
+      const container = document.getElementById('app-container');
+
+      if (!o) {
+        document.getElementById('print-header').innerHTML = '';
+        container.innerHTML =
+          '<main class="max-w-3xl w-full mx-auto px-4 py-14">' +
+          '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4 shadow-xl">' +
+          '<div class="w-14 h-14 rounded-2xl bg-cyan-950 border border-cyan-700/50 text-cyan-400 flex items-center justify-center text-2xl mx-auto">🏊‍♂️</div>' +
+          '<h2 class="text-xl font-black text-white">No hay clientes agendados en la ruta</h2>' +
+          '<p class="text-sm text-slate-400 max-w-md mx-auto">Agrega tu primer cliente real para comenzar el checklist de 9 puntos, registrar fotos y enviar avisos por WhatsApp.</p>' +
+          '<div class="pt-2">' +
+          '<button onclick="openNewModal()" class="px-5 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm shadow-lg">+ Agendar Primer Cliente</button>' +
+          '</div></div></main>';
+        return;
+      }
+
       const doneCount = CHECKLIST_ITEMS.filter(i => o.checklist[i.id]).length;
       const pct = Math.round((doneCount / CHECKLIST_ITEMS.length) * 100);
       const clBadge = getChlorineBadge(o.quimica.cloro);
@@ -669,8 +679,6 @@
         '<p class="text-sm text-slate-700">Orden: <strong>' + escHtml(o.id) + '</strong></p>' +
         '<p class="text-xs text-slate-500">Fecha: ' + escHtml(o.fechaServicio) + '</p></div></div>';
 
-      const container = document.getElementById('app-container');
-
       if (viewMode === 'tech') {
         const filtered = orders.filter(item =>
           item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -683,25 +691,27 @@
           const sel = item.id === o.id;
           const d = CHECKLIST_ITEMS.filter(c => item.checklist[c.id]).length;
           listHtml +=
-            '<button onclick="selectOrder(\'' + escHtml(item.id) + '\')" class="w-full text-left p-3.5 rounded-xl border transition ' +
+            '<div onclick="selectOrder('' + escHtml(item.id) + '')" class="cursor-pointer w-full text-left p-3.5 rounded-xl border transition ' +
             (sel ? 'bg-slate-800/90 border-cyan-500 shadow-lg' : 'bg-slate-950/60 border-slate-800 hover:border-slate-700') + '">' +
             '<div class="flex items-center justify-between gap-2 mb-1">' +
             '<span class="text-xs font-mono text-cyan-400 font-bold">' + escHtml(item.id) + '</span>' +
+            '<div class="flex items-center gap-1.5">' +
             '<span class="text-[11px] px-2 py-0.5 rounded-full border font-semibold ' + statusClass(item.estado) + '">' + escHtml(item.estado) + '</span>' +
-            '</div>' +
+            '<button type="button" title="Eliminar visita" onclick="askDeleteOrder('' + escHtml(item.id) + '', event)" class="px-1.5 py-0.5 rounded-md bg-rose-950/70 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-800/60 text-[11px] font-bold transition">🗑️</button>' +
+            '</div></div>' +
             '<p class="font-bold text-slate-100 text-sm truncate">' + escHtml(item.nombre) + '</p>' +
             '<p class="text-xs text-slate-400 truncate mt-0.5">' + escHtml(item.direccion) + '</p>' +
             '<div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-800 text-[11px] text-slate-400">' +
             '<span>👷 ' + escHtml(item.tecnico) + ' • ⏰ ' + escHtml(item.horaProgramada) + '</span>' +
             '<span class="text-cyan-400 font-semibold">' + d + '/9 ítems</span>' +
-            '</div></button>';
+            '</div></div>';
         });
 
         let checklistHtml = '';
         CHECKLIST_ITEMS.forEach((item, idx) => {
           const ck = !!o.checklist[item.id];
           checklistHtml +=
-            '<button type="button" onclick="toggleCheck(\'' + item.id + '\')" class="p-3 rounded-xl border text-left transition flex items-start gap-3 ' +
+            '<button type="button" onclick="toggleCheck('' + item.id + '')" class="p-3 rounded-xl border text-left transition flex items-start gap-3 ' +
             (ck ? 'bg-emerald-950/35 border-emerald-600/60' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700') + '">' +
             '<div class="mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 border ' +
             (ck ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'bg-slate-900 border-slate-700 text-transparent') + '">✓</div>' +
@@ -715,7 +725,7 @@
         PRODUCTOS.forEach(p => {
           const act = (o.quimica.productosUsados || []).includes(p);
           prodsHtml +=
-            '<button type="button" onclick="toggleProducto(\'' + escHtml(p) + '\')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ' +
+            '<button type="button" onclick="toggleProducto('' + escHtml(p) + '')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ' +
             (act ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600') + '">' +
             (act ? '✓ ' : '+ ') + escHtml(p) + '</button>';
         });
@@ -732,7 +742,7 @@
               '<span class="absolute top-2.5 left-2.5 text-[11px] font-black px-2.5 py-1 rounded-lg uppercase shadow ' +
               (f.type === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 text-slate-950') + '">' +
               (f.type === 'before' ? 'Antes' : 'Después') + '</span>' +
-              '<button type="button" onclick="deletePhoto(\'' + escHtml(f.id) + '\')" class="no-print absolute top-2.5 right-2.5 bg-slate-950/80 hover:bg-rose-600 text-white w-7 h-7 rounded-lg text-xs font-bold">✕</button>' +
+              '<button type="button" onclick="deletePhoto('' + escHtml(f.id) + '')" class="no-print absolute top-2.5 right-2.5 bg-slate-950/80 hover:bg-rose-600 text-white w-7 h-7 rounded-lg text-xs font-bold">✕</button>' +
               '</div><div class="p-3 flex justify-between items-center gap-2">' +
               '<p class="text-xs text-slate-200 font-medium truncate">' + escHtml(f.caption) + '</p>' +
               '<span class="text-[11px] text-slate-500 shrink-0">' + escHtml(f.timestamp) + ' hrs</span></div></div>';
@@ -744,10 +754,12 @@
           '<main class="max-w-7xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">' +
           '<aside class="no-print lg:col-span-4 space-y-4">' +
           '<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">' +
-          '<div class="flex items-center justify-between">' +
+          '<div class="flex items-center justify-between gap-2">' +
           '<h2 class="font-bold text-base text-white">📍 Ruta del Día (' + orders.length + ')</h2>' +
+          '<div class="flex items-center gap-1.5">' +
+          (orders.length > 1 ? '<button onclick="askClearAllOrders()" title="Vaciar lista" class="px-2.5 py-1.5 rounded-xl bg-rose-950/70 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-800/60 font-bold text-xs transition">Vaciar</button>' : '') +
           '<button onclick="openNewModal()" class="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs">+ Nueva Visita</button>' +
-          '</div>' +
+          '</div></div>' +
           '<input type="text" value="' + escHtml(searchTerm) + '" oninput="updateSearch(this.value)" placeholder="Buscar cliente, dirección u orden..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200" />' +
           '<div class="space-y-2.5 max-h-[65vh] overflow-y-auto pr-1">' + listHtml + '</div>' +
           '</div></aside>' +
@@ -764,10 +776,13 @@
           '<p class="text-sm text-slate-300 mt-0.5">📍 ' + escHtml(o.direccion) + '</p>' +
           '<p class="text-xs text-cyan-400 mt-1">🏊 ' + escHtml(o.tipoPiscina) + ' • 📞 +' + escHtml(o.telefono) + '</p></div>' +
           '<div class="no-print flex flex-col sm:items-end gap-2">' +
+          '<div class="flex items-center gap-2">' +
           '<select onchange="changeTech(this.value)" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-semibold">' +
           '<option value="Ángel"' + (o.tecnico === 'Ángel' ? ' selected' : '') + '>Técnico: Ángel</option>' +
           '<option value="Anai"' + (o.tecnico === 'Anai' ? ' selected' : '') + '>Técnico: Anai</option>' +
           '</select>' +
+          '<button type="button" onclick="askDeleteOrder('' + escHtml(o.id) + '', event)" class="px-2.5 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-600 text-rose-200 hover:text-white text-xs font-bold border border-rose-700/60 transition">🗑️ Eliminar</button>' +
+          '</div>' +
           '<button onclick="copyClientLink()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700">🔗 Copiar Link Portal Cliente</button>' +
           '</div></div>' +
 
@@ -800,9 +815,9 @@
           '<h3 class="font-bold text-lg text-white">🧪 Control Químico e Insumos Aplicados</h3>' +
           '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
           '<div class="p-4 rounded-xl border ' + clBadge.box + '"><div class="flex justify-between items-center mb-2"><label class="text-xs font-bold uppercase text-slate-300">Cloro Libre (ppm)</label><span class="text-xs font-bold ' + clBadge.cls + '">' + clBadge.text + '</span></div>' +
-          '<input type="number" step="0.1" min="0" max="10" value="' + escHtml(o.quimica.cloro) + '" onchange="updateQuimica(\'cloro\', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
+          '<input type="number" step="0.1" min="0" max="10" value="' + escHtml(o.quimica.cloro) + '" onchange="updateQuimica('cloro', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
           '<div class="p-4 rounded-xl border ' + phBadge.box + '"><div class="flex justify-between items-center mb-2"><label class="text-xs font-bold uppercase text-slate-300">Nivel de pH</label><span class="text-xs font-bold ' + phBadge.cls + '">' + phBadge.text + '</span></div>' +
-          '<input type="number" step="0.1" min="6.0" max="8.5" value="' + escHtml(o.quimica.ph) + '" onchange="updateQuimica(\'ph\', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
+          '<input type="number" step="0.1" min="6.0" max="8.5" value="' + escHtml(o.quimica.ph) + '" onchange="updateQuimica('ph', this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-lg font-black text-white" /></div>' +
           '</div>' +
           '<div><p class="text-xs font-semibold text-slate-400 mb-2">Productos dosificados en esta visita:</p><div class="flex flex-wrap gap-2">' + prodsHtml + '</div></div>' +
           '<div><label class="block text-xs font-semibold text-slate-400 mb-1.5">Observaciones técnicas para el cliente:</label>' +
@@ -813,8 +828,8 @@
           '<div><h3 class="font-bold text-lg text-white">📸 Registro Fotográfico (Antes / Después)</h3><p class="text-xs text-slate-400">Carga fotos desde la cámara o galería del teléfono</p></div>' +
           '<div class="no-print bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">' +
           '<div class="flex rounded-xl overflow-hidden border border-slate-700 shrink-0">' +
-          '<button type="button" onclick="setPhotoType(\'before\')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Antes</button>' +
-          '<button type="button" onclick="setPhotoType(\'after\')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'after' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Después</button>' +
+          '<button type="button" onclick="setPhotoType('before')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'before' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Antes</button>' +
+          '<button type="button" onclick="setPhotoType('after')" class="px-3 py-2 text-xs font-bold ' + (selectedPhotoType === 'after' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-slate-300') + '">Después</button>' +
           '</div>' +
           '<input id="photo-caption-input" type="text" placeholder="Descripción breve (opcional)..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200" />' +
           '<label class="cursor-pointer px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs text-center shrink-0">📷 Subir Foto' +
@@ -822,6 +837,7 @@
           '</div>' + fotosHtml + '</div>' +
           '</section></main>';
       } else {
+        // VISTA PORTAL CLIENTE
         let clientChecklist = '';
         CHECKLIST_ITEMS.forEach(item => {
           const ck = !!o.checklist[item.id];
