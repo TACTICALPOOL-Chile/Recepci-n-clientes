@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TACTICALPOOL | Precisión en cada gota</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body { background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .print-card { border: 1px solid #cbd5e1 !important; box-shadow: none !important; background: white !important; color: black !important; }
+      .print-card * { color: #0f172a !important; }
+    }
+    .print-only { display: none; }
+    canvas { touch-action: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased min-h-screen flex flex-col">
+
+  <!-- NOTIFICACION FLOTANTE -->
+  <div id="toast" class="no-print hidden fixed bottom-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl border border-cyan-300 flex items-center gap-2">
+    <span>✓</span>
+    <span id="toast-text"></span>
+  </div>
+
+  <!-- BARRA SUPERIOR -->
+  <header class="no-print sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg">
+          TP
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-black tracking-wider text-lg text-white">TACTICALPOOL</h1>
+            <span class="hidden sm:inline-block text-[11px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700/50 font-medium">
+              +56 9 4117 6083
+            </span>
+          </div>
+          <p class="text-xs text-cyan-400 italic">"Precisión en cada gota"</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center">
+          <button id="btn-mode-tech" onclick="setViewMode('tech')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-cyan-500 text-slate-950 shadow">
+            🛠️ Vista Técnico
+          </button>
+          <button id="btn-mode-client" onclick="setViewMode('client')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white">
+            📱 Portal Cliente
+          </button>
+        </div>
+        <button onclick="window.print()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold border border-slate-700 transition">
+          🖨️ Certificado PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ENCABEZADO IMPRESION PDF -->
+  <div id="print-header" class="print-only p-6 border-b-2 border-slate-800 mb-4"></div>
+
+  <!-- CONTENIDO DINAMICO -->
+  <div id="app-container" class="flex-1"></div>
+
+  <!-- PIE DE PAGINA -->
+  <footer class="border-t border-slate-900 py-5 px-4 text-center text-xs text-slate-500">
+    <strong class="text-slate-300">TACTICALPOOL</strong> • "Precisión en cada gota" • Región de Valparaíso, Chile • Contacto: +56 9 4117 6083
+  </footer>
+
+  <!-- MODAL NUEVA VISITA -->
+  <div id="modal-new" class="no-print hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="font-black text-lg text-white">Agendar Nueva Visita</h3>
+        <button onclick="closeNewModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form onsubmit="createNewClient(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nombre del Cliente *</label>
+          <input id="new-nombre" type="text" required placeholder="Ej. Familia Pérez" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Dirección / Comuna *</label>
+          <input id="new-direccion" type="text" required placeholder="Ej. Hacienda Lo Orozco, Casablanca" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">WhatsApp (569...)</label>
+            <input id="new-telefono" type="text" value="569" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Hora Programada</label>
+            <input id="new-hora" type="time" value="10:00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tipo de Piscina</label>
+            <input id="new-piscina" type="text" value="Hormigón • 40.000 L" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Técnico Asignado</label>
+            <select id="new-tecnico" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+              <option value="Ángel">Ángel</option>
+              <option value="Anai">Anai</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Notas de acceso</label>
+          <input id="new-notas" type="text" placeholder="Clave portón, mascotas, horario bomba..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeNewModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm font-semibold">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-sm font-black">Guardar Visita</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const CHECKLIST_ITEMS = [
+      { id: 'superficial', label: 'Limpieza superficial', desc: 'Retiro de hojas, insectos y sólidos flotantes con chinguillo.' },
+      { id: 'skimmer', label: 'Limpieza skimmer', desc: 'Vaciado y lavado de canastillo de skimmer y revisión de compuerta.' },
+      { id: 'canastillos_bomba', label: 'Limpieza canastillos bomba', desc: 'Cierre de válvulas, purga y limpieza de prefiltro de motobomba.' },
+      { id: 'retrolavado', label: 'Retrolavado', desc: 'Lavado a contracorriente del filtro hasta visor cristalino.' },
+      { id: 'enjuague', label: 'Enjuague', desc: 'Asentamiento de lecho filtrante y expulsión de residuos residuales.' },
+      { id: 'cepillado', label: 'Cepillado', desc: 'Cepillado de muros, escaleras, línea de flotación y rincones.' },
+      { id: 'productos', label: 'Aplicación de productos', desc: 'Dosificación calculada según volumen y temperatura del agua.' },
+      { id: 'cloro_ph', label: 'Nivel cloro y ph', desc: 'Medición fotométrica/reactivos y balance de parámetros.' },
+      { id: 'aspirado', label: 'Aspirado', desc: 'Aspirado de fondo de piscina eliminando sedimentos finos.' }
+    ];
+
+    const PRODUCTOS = [
+      'Cloro granulado',
+      'Tabletas triple acción',
+      'Regulador pH-',
+      'Regulador pH+',
+      'Alguicida',
+      'Clarificador'
+    ];
+
+    function makeDemoSvg(type, title, subtitle) {
+      const isBefore = type === 'before';
+      const c1 = isBefore ? '#0f4c5c' : '#0077b6';
+      const c2 = isBefore ? '#335c67' : '#00b4d8';
+      const badge = isBefore ? 'RECEPCIÓN / ANTES' : 'ENTREGA / DESPUÉS';
+      const badgeColor = isBefore ? '#f59e0b' : '#10b981';
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">' +
+        '<rect width="800" height="480" fill="' + c1 + '"/>' +
+        '<circle cx="640" cy="110" r="150" fill="' + c2 + '" opacity="0.45"/>' +
+        '<rect x="36" y="36" width="230" height="38" rx="8" fill="#0f172a"/>' +
+        '<text x="151" y="61" font-family="sans-serif" font-size="15" font-weight="bold" fill="' + badgeColor + '" text-anchor="middle">' + badge + '</text>' +
+        '<text x="36" y="395" font-family="sans-serif" font-size="30" font-weight="bold" fill="#ffffff">' + title + '</text>' +
+        '<text x="36" y="432" font-family="sans-serif" font-size="19" fill="#e2e8f0">' + subtitle + ' • Tacticalpool</text>' +
+        '</svg>';
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    function todayStr() {
+      return new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function nowTimeStr() {
+      return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const DEFAULT_ORDERS = [
+      {
+        id: 'TP-2026-101',
+        nombre: 'Familia Valdés Echeverría',
+        direccion: 'Condominio Bosques de Montemar, Parcela 14, Concón',
+        telefono: '56987654321',
+        tipoPiscina: 'Hormigón Pintado • 45.000 L',
+        tecnico: 'Ángel',
+        fechaServicio: todayStr(),
+        notas: 'Portón automático clave #4589. Perro labrador amigable en patio trasero.',
+        estado: 'En Servicio',
+        horaProgramada: '09:30',
+        horaLlegada: '09:34',
+        horaSalida: null,
+        duracionMinutos: null,
+        checklist: {
+          superficial: true, skimmer: true, canastillos_bomba: true,
+          retrolavado: true, enjuague: true, cepillado: true,
+          productos: false, cloro_ph: true, aspirado: false
+        },
+        quimica: { cloro: 1.8, ph: 7.4, productosUsados: ['Cloro granulado', 'Clarificador'] },
+        notasTecnicas: 'Acumulación moderada de hojas por viento costero. Presión de filtro normalizada tras retrolavado.',
+        fotos: [
+          {
+            id: 'f-1',
+            type: 'before',
+            url: makeDemoSvg('before', 'Recepción Inicial 09:34 hrs', 'Hojas en superficie y leve turbidez'),
+            caption: 'Estado inicial antes de limpieza superficial',
+            timestamp: '09:36'
+          }
+        ],
+        clientApproval: { aprobado: false, clientName: '', comentario: '', firmaDataUrl: '', aprobadoAt: null }
+      },
+      {
+        id: 'TP-2026-102',
+        nombre: 'Rodrigo Maturana',
+        direccion: 'Parcela Lo Orozco Km 12, Casa 4, Casablanca',
+        telefono: '56991234567',
+        tipoPiscina: 'Fibra de Vidrio • 32.000 L',
+        tecnico: 'Anai',
+        fechaServicio: todayStr(),
+        notas: 'Avisar 15 minutos antes por WhatsApp para abrir acceso.',
+        estado: 'Pendiente',
+        horaProgramada: '11:30',
+        horaLlegada: null,
+        horaSalida: null,
+        duracionMinutos: null,
+        checklist: {
+          superficial: false, skimmer: false, canastillos_bomba: false,
+          retrolavado: false, enjuague: false, cepillado: false,
+          productos: false, cloro_ph: false, aspirado: false
+        },
+        quimica: { cloro: 1.5, ph: 7.4, productosUsados: [] },
+        notasTecnicas: '',
+        fotos: [],
+        clientApproval: { aprobado: false, clientName: '', comentario: '', firmaDataUrl: '', aprobadoAt: null }
+      },
+      {
+        id: 'TP-2026-103',
+        nombre: 'Carolina Sepúlveda',
+        direccion: 'Jardín del Mar, Av. Borgoño 1420, Viña del Mar',
+        telefono: '56976543210',
+        tipoPiscina: 'Revestimiento Fulget • 38.000 L',
+        tecnico: 'Ángel',
+        fechaServicio: todayStr(),
+        notas: 'Bomba programada de 10:00 a 16:00 hrs.',
+        estado: 'Finalizado',
+        horaProgramada: '08:00',
+        horaLlegada: '08:05',
+        horaSalida: '08:52',
+        duracionMinutos: 47,
+        checklist: {
+          superficial: true, skimmer: true, canastillos_bomba: true,
+          retrolavado: true, enjuague: true, cepillado: true,
+          productos: true, cloro_ph: true, aspirado: true
+        },
+        quimica: { cloro: 2.2, ph: 7.3, productosUsados: ['Cloro granulado', 'Alguicida', 'Tabletas triple acción'] },
+        notasTecnicas: 'Mantenimiento preventivo completo. Agua cristalina y parámetros en rango óptimo.',
+        fotos: [
+          {
+            id: 'f-2',
+            type: 'before',
+            url: makeDemoSvg('before', 'Recepción 08:05 hrs', 'Sedimento fino en zona profunda'),
+            caption: 'Antes del aspirado de fondo',
+            timestamp: '08:07'
+          },
+          {
+            id: 'f-3',
+            type: 'after',
+            url: makeDemoSvg('after', 'Entrega Final 08:52 hrs', 'Agua cristalina y fondo impecable'),
+            caption: 'Servicio entregado - Parámetros óptimos',
+            timestamp: '08:50'
+          }
+        ],
+        clientApproval: {
+          aprobado: true,
+          clientName: 'Carolina Sepúlveda',
+          comentario: 'Excelente servicio como siempre, muy puntuales y prolijos.',
+          firmaDataUrl: '',
+          aprobadoAt: '09:15'
+        }
+      }
+    ];
+
+    let orders = [];
+    try {
+      const saved = localStorage.getItem('tacticalpool_orders_v2');
+      orders = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    } catch (e) {
+      orders = JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    }
+
+    let activeOrderId = orders[0].id;
+    let viewMode = 'tech';
+    let searchTerm = '';
+    let selectedPhotoType = 'after';
+    let currentSignatureData = '';
+
+    (function checkUrlParams() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const ficha = params.get('ficha');
+        const orden = params.get('orden');
+        if (ficha) {
+          const decoded = JSON.parse(decodeURIComponent(escape(atob(ficha))));
+          if (decoded && decoded.id) {
+            const idx = orders.findIndex(o => o.id === decoded.id);
+            if (idx >= 0) orders[idx] = decoded;
+            else orders.unshift(decoded);
+            activeOrderId = decoded.id;
+            viewMode = 'client';
+          }
+        } else if (orden) {
+          activeOrderId = orden;
+          viewMode = 'client';
+        }
+      } catch (err) {
+        console.warn('URL param error', err);
+      }
+    })();
+
+    function saveOrders() {
+      try {
+        localStorage.setItem('tacticalpool_orders_v2', JSON.stringify(orders));
+      } catch (e) {}
+    }
+
+    function getActiveOrder() {
+      return orders.find(o => o.id === activeOrderId) || orders[0];
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      const txt = document.getElementById('toast-text');
+      if (!el || !txt) return;
+      txt.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function escHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function calcMinutes(startStr, endStr) {
+      if (!startStr || !endStr) return 45;
+      const p1 = startStr.split(':').map(Number);
+      const p2 = endStr.split(':').map(Number);
+      const diff = (p2[0] * 60 + p2[1]) - (p1[0] * 60 + p1[1]);
+      return diff > 0 ? diff : 1;
+    }
+
+    function getChlorineBadge(val) {
+      const n = parseFloat(val);
+      if (isNaN(n)) return { text: 'Sin dato', cls: 'text-slate-400', box: 'bg-slate-800 border-slate-700' };
+      if (n < 1.0) return { text: 'Bajo (<1.0 ppm)', cls: 'text-amber-400', box: 'bg-amber-950/60 border-amber-700/50' };
+      if (n <= 3.0) return { text: 'Óptimo (1.0 - 3.0 ppm)', cls: 'text-emerald-400', box: 'bg-emerald-950/60 border-emerald-700/50' };
+      return { text: 'Alto (>3.0 ppm)', cls: 'text-rose-400', box: 'bg-rose-950/60 border-rose-700/50' };
+    }
+
+    function getPhBadge(val) {
+      const n = parseFloat(val);
+      if (isNaN(n)) return { text: 'Sin dato', cls: 'text-slate-400', box: 'bg-slate-800 border-slate-700' };
+      if (n < 7.2) return { text: 'Ácido (<7.2)', cls: 'text-amber-400', box: 'bg-amber-950/60 border-amber-700/50' };
+      if (n <= 7.6) return { text: 'Óptimo (7.2 - 7.6)', cls: 'text-emerald-400', box: 'bg-emerald-950/60 border-emerald-700/50' };
+      return { text: 'Alcalino (>7.6)', cls: 'text-rose-400', box: 'bg-rose-950/60 border-rose-700/50' };
+    }
+
+    function statusClass(estado) {
+      if (estado === 'En Camino') return 'bg-amber-950/80 text-amber-300 border-amber-600/50';
+      if (estado === 'En Servicio') return 'bg-cyan-950/80 text-cyan-300 border-cyan-500/50';
+      if (estado === 'Finalizado') return 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50';
+      return 'bg-slate-800 text-slate-300 border-slate-700';
+    }
+
+    function buildClientShareUrl(order) {
+      const base = window.location.href.split('?')[0];
+      const lite = {
+        ...order,
+        fotos: order.fotos.map(f => ({
+          ...f,
+          url: f.url.startsWith('data:image/svg')
+            ? f.url
+            : makeDemoSvg(f.type, f.caption || (f.type === 'before' ? 'Recepción en Terreno' : 'Entrega Final'), 'Orden ' + order.id)
+        }))
+      };
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(lite))));
+      return base + '?orden=' + encodeURIComponent(order.id) + '&ficha=' + encodeURIComponent(encoded);
+    }
+
+    function openWhatsApp(phone, msg) {
+      const clean = String(phone || '').replace(/[^0-9]/g, '');
+      window.open('https://wa.me/' + clean + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      const bTech = document.getElementById('btn-mode-tech');
+      const bClient = document.getElementById('btn-mode-client');
+      if (mode === 'tech') {
+        bTech.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-cyan-500 text-slate-950 shadow';
+        bClient.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white';
+      } else {
+        bTech.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white';
+        bClient.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-emerald-500 text-slate-950 shadow';
+      }
+      render();
+    }
+
+    function selectOrder(id) {
+      activeOrderId = id;
+      render();
+    }
+
+    function updateSearch(val) {
+      searchTerm = val;
+      render();
+    }
+
+    function changeTech(val) {
+      const o = getActiveOrder();
+      o.tecnico = val;
+      saveOrders();
+      render();
+    }
+
+    function notifyEnCamino() {
+      const o = getActiveOrder();
+      const now = nowTimeStr();
+      o.estado = 'En Camino';
+      saveOrders();
+      render();
+      showToast('Estado: En Camino');
+      const msg = 'Hola ' + o.nombre + ', te saluda *' + o.tecnico + '* de *TACTICALPOOL* ("Precisión en cada gota"). 🚐💧\n\nTe aviso que voy *en camino* hacia tu domicilio (' + o.direccion + ') para el mantenimiento de tu piscina. Hora de aviso: ' + now + ' hrs.';
+      openWhatsApp(o.telefono, msg);
+    }
+
+    function notifyLlegada() {
+      const o = getActiveOrder();
+      const now = nowTimeStr();
+      o.estado = 'En Servicio';
+      if (!o.horaLlegada) o.horaLlegada = now;
+      saveOrders();
+      render();
+      showToast('Llegada registr
